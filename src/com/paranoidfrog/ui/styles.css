@@ -64,6 +64,14 @@
     -fx-background-radius: 100;
 }
 
+.volume-button {
+    -fx-background-color: transparent;
+}
+.volume-button .knob {
+    -fx-background-image: url("buttondarkgreen.gif");
+    -fx-background-size: stretch; 
+}
+
 .button-overdrive{
 	-fx-margin-left: 30;
 	-fx-graphic: url('flag_overdrive.png');

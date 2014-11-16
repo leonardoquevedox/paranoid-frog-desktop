@@ -21,19 +21,13 @@
 package com.paranoidfrog.ui;
 
 import java.awt.Color;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
 import com.synthbot.jasiohost.AsioChannel;
@@ -64,53 +58,18 @@ public class AudioEngine extends JFrame implements AsioDriverListener {
 	private int numOutputs;
 	private JComboBox comboBox;
 	private AsioDriverListener host;
+	public final static int CLEAN_GAIN = 0;
+	public final static int OVERDRIVE_GAIN = 10;
+	private int gain;
+	private String currentBuffer;
+	private static final String LEFT_BUFFER = "LEFT";
+	private static final String RIGHT_BUFFER = "RIGHT";
 
 	public AudioEngine() {
 		super("Paranoid Frog");
-
 		activeChannels = new HashSet<AsioChannel>();
-
 		comboBox = new JComboBox(AsioDriver.getDriverNames().toArray());
-		comboBox.setBackground(Color.WHITE);
-		final JButton buttonStart = new JButton("Start!");
-		final JButton buttonStop = new JButton("Stop!");
-		final JButton buttonControlPanel = new JButton("Control Panel!");
-
-		buttonStart.setBackground(new Color(52, 129, 253));
-		buttonStop.setBackground(Color.BLACK);
-		buttonControlPanel.setBackground(Color.WHITE);
-
-		this.setForeground(Color.GREEN);
 		host = this;
-
-		buttonStart.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				initDrivers();
-			}
-		});
-
-		buttonStop.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				stopDrivers();
-			}
-		});
-
-		buttonControlPanel.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				openControlPanel();
-			}
-		});
-
-		this.setLayout(new GridLayout(2, 2));
-		JPanel panel = new JPanel();
-		panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
-		this.add(comboBox);
-		panel.add(buttonStart);
-		panel.add(buttonStop);
-		panel.add(buttonControlPanel);
-		this.add(panel);
-		this.setBackground(Color.WHITE);
-		this.getContentPane().setBackground(Color.WHITE);
 
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		this.addWindowListener(new WindowAdapter() {
@@ -122,10 +81,13 @@ public class AudioEngine extends JFrame implements AsioDriverListener {
 			}
 		});
 
-		this.setSize(600, 600);
-
-		this.setResizable(false);
-//		this.setVisible(true);
+	}
+	
+	public void footSwitch() {
+		if (gain == CLEAN_GAIN)
+			gain = OVERDRIVE_GAIN;
+		else
+			gain = CLEAN_GAIN;
 	}
 
 	public void openControlPanel() {
@@ -134,7 +96,6 @@ public class AudioEngine extends JFrame implements AsioDriverListener {
 			asioDriver.openControlPanel();
 		}
 	}
-
 	public void stopDrivers() {
 		if (asioDriver != null) {
 			asioDriver.shutdownAndUnloadDriver();
@@ -142,9 +103,9 @@ public class AudioEngine extends JFrame implements AsioDriverListener {
 			asioDriver = null;
 		}
 	}
-
 	public void initDrivers() {
 		if (asioDriver == null) {
+			gain = CLEAN_GAIN;
 			asioDriver = AsioDriver.getDriver(comboBox.getSelectedItem().toString());
 			asioDriver.addAsioDriverListener(host);
 			numInputs = asioDriver.getNumChannelsInput();
@@ -164,56 +125,17 @@ public class AudioEngine extends JFrame implements AsioDriverListener {
 			asioDriver.start();
 		}
 	}
-
 	public void bufferSwitch(long systemTime, long samplePosition, Set<AsioChannel> channels) {
 		float[] outputLeftArray = new float[bufferSize];
 		float[] outputRightArray = new float[bufferSize];
-		for (AsioChannel activeChannel : activeChannels) {
-			if (activeChannel.isInput()) {
-				
-				double treshHold = 50.0f; 
-				double multiplier = 1.0/0x7fff; // normalize input to double -1,1
-				double wetSample = 0.0f;
-			     for(int i=0;i<bufferSize;i++){
-			    	 double inputSample = multiplier*activeChannel.getByteBuffer().getInt();
-			    	 double absolutInputSample = java.lang.Math.abs(inputSample);
-//			    	 System.out.println(absolutInputSample);
-			        if(absolutInputSample<treshHold){
-//			        	System.out.println("Meh.");
-			            wetSample=(outputRightArray[i]*2*(multiplier));
-			        }
-			        else if(absolutInputSample<2*treshHold){
-			            if(inputSample>0){
-//			            	System.out.println("+");
-			            	wetSample = (3-(2-inputSample*3)*(2-inputSample*3))/3;
-			            }
-			            else {
-			            	if(inputSample<0){
-//			            		System.out.println("-");
-			            		wetSample=-(3-(2-absolutInputSample*3)*(2-absolutInputSample*3))/3;
-			            	}
-				            	
-			            }	
-			        }
-			        else if(absolutInputSample>=2*treshHold){
-			            if(inputSample>0)wetSample=1;
-			            else if(inputSample<0)wetSample=-1;
-			        }
-			        outputRightArray[i] = (float)(wetSample/multiplier);
-			    }
+
+		for (AsioChannel activeChannel : channels) {
+			if (activeChannel.isInput() && activeChannel.isActive()) {
+				for (int i = 0; i < bufferSize; i++) {
+					outputRightArray[i] = ((float) activeChannel.getByteBuffer().getInt() * gain)/ Integer.MAX_VALUE;
+				}
 			}
 		}
-
-//		for (AsioChannel activeChannel : channels) {
-//			if (activeChannel.isInput()) {
-//				for (int i = 0; i < bufferSize; i++) {
-//					outputLeftArray[i] += ((float) activeChannel
-//							.getByteBuffer().getInt()) / Integer.MAX_VALUE;
-//					outputRightArray[i] += ((float) activeChannel
-//							.getByteBuffer().getInt()) / Integer.MAX_VALUE;
-//				}
-//			}
-//		}
 
 		// We shall do a separate loop of the channels as there is no guarantee
 		// that all the input
@@ -222,7 +144,7 @@ public class AudioEngine extends JFrame implements AsioDriverListener {
 
 		boolean sideSwitch = false;
 		for (AsioChannel activeChannel : channels) {
-			if (!activeChannel.isInput()) {
+			if (!activeChannel.isInput() && activeChannel.isActive()) {
 				if (sideSwitch)
 					activeChannel.write(outputRightArray);
 				else

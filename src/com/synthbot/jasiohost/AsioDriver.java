@@ -471,7 +471,7 @@ public class AsioDriver {
     activeChannels.addAll(channelsToInit);
     
     registerThreadIfNecessary();
-    ASIOCreateBuffers(activeChannels.toArray(new AsioChannel[0]), getBufferPreferredSize());
+    ASIOCreateBuffers(activeChannels.toArray(new AsioChannel[1]), getBufferPreferredSize());
     
     currentState = AsioDriverState.PREPARED;
   }

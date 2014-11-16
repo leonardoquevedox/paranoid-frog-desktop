@@ -1,5 +1,7 @@
 package com.paranoidfrog.ui;
 
+import javax.swing.KeyStroke;
+
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -8,8 +10,10 @@ import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -18,17 +22,18 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 	private AudioEngine asioHost;
+
 	public static void main(String[] args) {
 		launch(args);
 	}
-	
-	public Main(){
+
+	public Main() {
 		asioHost = new AudioEngine();
 	}
 
 	@Override
 	public void start(Stage primaryStage) {
-		primaryStage.setTitle("Hello World!");
+		
 
 		Button download = new Button();
 		download.getStyleClass().add("button");
@@ -100,10 +105,12 @@ public class Main extends Application {
 		cabecote.setPrefSize(100.0, 134.0);
 		cabecote.setMaxWidth(600.0);
 		cabecote.setEffect(new DropShadow(25.0, Color.BLACK));
+		
+		 Label keyPressed = new Label();
 
 		HBox cabecote2 = new HBox(2);
 		cabecote2.setAlignment(Pos.CENTER);
-		cabecote2.getChildren().addAll(rockOn2, flag2, rockOff2);
+		cabecote2.getChildren().addAll(rockOn2, flag2, rockOff2, keyPressed);
 		cabecote2.getStyleClass().add("hbox");
 		cabecote2.getStyleClass().add("head");
 		cabecote2.setPrefSize(100.0, 134.0);
@@ -116,6 +123,8 @@ public class Main extends Application {
 		amp.getStyleClass().add("hbox");
 		amp.getStyleClass().add("body");
 		amp.setEffect(new DropShadow(10.0, Color.BLACK));
+		
+		
 
 		VBox vBox = new VBox(2);
 		vBox.setAlignment(Pos.BOTTOM_CENTER);
@@ -125,13 +134,25 @@ public class Main extends Application {
 		Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
 		Scene scene = new Scene(vBox, screenSize.getWidth() - 20, screenSize.getHeight() - 20);
+		
+		 scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+	            public void handle(KeyEvent ke) {
+	               asioHost.footSwitch();
+	            }
+	        });
+		 
+		 scene.setOnKeyReleased(new EventHandler<KeyEvent>() {
+	            public void handle(KeyEvent ke) {
+	               asioHost.footSwitch();
+	            }
+	        });
 
 		Image icon = new Image(Main.class.getResourceAsStream("ic_launcher.png"));
 		primaryStage.getIcons().add(icon);
 		primaryStage.setTitle("Paranoid Frog");
 		primaryStage.setScene(scene);
 		primaryStage.getScene().getStylesheets()
-				.setAll(Main.class.getResource("DownloadButtonStyle2.css").toString());
+				.setAll(Main.class.getResource("styles.css").toString());
 		primaryStage.setMaximized(true);
 		primaryStage.show();
 	}
